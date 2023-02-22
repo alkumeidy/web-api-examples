@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Example of the Authorization Code flow with Spotify</title>
+    <title>Using Spotify API to display User's Top Artists</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <style type="text/css">
       #login, #loggedin {
@@ -13,54 +13,108 @@
         white-space: nowrap;
         width: 500px;
       }
+      body {
+        background-color: rgb(0, 0, 0);
+        color: rgba(119, 119, 119, 0.725);
+      }
+      dl {
+        display: grid;
+        grid-template-columns: repeat(3, 380px);
+      }
     </style>
   </head>
 
   <body>
     <div class="container">
       <div id="login">
-        <h1>This is an example of the Authorization Code flow</h1>
+        <h1>Login to Spotify Account</h1>
         <a href="/login" class="btn btn-primary">Log in with Spotify</a>
       </div>
       <div id="loggedin">
         <div id="user-profile">
         </div>
-        <div id="oauth">
+        <div class="plots">
+          <h3>My Ranking vs Spotify Popularity</h3>
+          <canvas id="chartContainer" style="width:100%;max-width:700px"></canvas>
         </div>
-        <button class="btn btn-default" id="obtain-new-token">Obtain new token using the refresh token</button>
       </div>
     </div>
 
     <script id="user-profile-template" type="text/x-handlebars-template">
-      <h1>Logged in as {{display_name}}</h1>
-      <div class="media">
-        <div class="pull-left">
-          <img class="media-object" width="150" src="{{images.0.url}}" />
+      <h1>Top Artists</h1>
+      <dl>
+        {{#each this}}
+        <div class="media">
+          <div class="pull-left">
+            <img class="media-object" width="90" src="{{images.0.url}}" />
+          </div>
+          <div class="media-body">
+            <dl class="dl-horizontal">
+              <dt>Name</dt><dd class="clearfix">{{name}}</dd>
+              <dt>Genre</dt><dd>{{genres}}</dd>
+              <dt>Popularity Index</dt><dd>{{popularity}}</dd>
+              <dt>Rank # </dt><dd>{{popularityIndex.index}}</dd>
+            </dl>
+          </div>
         </div>
-        <div class="media-body">
-          <dl class="dl-horizontal">
-            <dt>Display name</dt><dd class="clearfix">{{display_name}}</dd>
-            <dt>Id</dt><dd>{{id}}</dd>
-            <dt>Email</dt><dd>{{email}}</dd>
-            <dt>Spotify URI</dt><dd><a href="{{external_urls.spotify}}">{{external_urls.spotify}}</a></dd>
-            <dt>Link</dt><dd><a href="{{href}}">{{href}}</a></dd>
-            <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
-            <dt>Country</dt><dd>{{country}}</dd>
-          </dl>
-        </div>
-      </div>
+        {{/each}}
+    </dl>
     </script>
 
-    <script id="oauth-template" type="text/x-handlebars-template">
-      <h2>oAuth info</h2>
-      <dl class="dl-horizontal">
-        <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
-        <dt>Refresh token</dt><dd class="text-overflow">{{refresh_token}}</dd>
-      </dl>
-    </script>
+    <script>
+      new CanvasJS.Chart("chartContainer", {
+        animationEnabled: true,
+        zoomEnabled: true,
+        title:{
+          text: "Real Estate Rates"
+        },
+        axisX: {
+          title:"Area (in sq. ft)",
+          minimum: 790,
+          maximum: 2260
+        },
+        axisY:{
+          title: "Price (in USD)",
+          valueFormatString: "$#,##0k"
+        },
+        data: [{
+          type: "scatter",
+          toolTipContent: "<b>Area: </b>{x} sq.ft<br/><b>Price: </b>${y}k",
+          dataPoints: [
+            { x: 800, y: 350 },
+            { x: 900, y: 450 },
+            { x: 850, y: 450 },
+            { x: 1250, y: 700 },
+            { x: 1100, y: 650 },
+            { x: 1350, y: 850 },
+            { x: 1200, y: 900 },
+            { x: 1410, y: 1250 },
+            { x: 1250, y: 1100 },
+            { x: 1400, y: 1150 },
+            { x: 1500, y: 1050 },
+            { x: 1330, y: 1120 },
+            { x: 1580, y: 1220 },
+            { x: 1620, y: 1400 },
+            { x: 1250, y: 1450 },
+            { x: 1350, y: 1600 },
+            { x: 1650, y: 1300 },
+            { x: 1700, y: 1620 },
+            { x: 1750, y: 1700 },
+            { x: 1830, y: 1800 },
+            { x: 1900, y: 2000 },
+            { x: 2050, y: 2200 },
+            { x: 2150, y: 1960 },
+            { x: 2250, y: 1990 }
+          ]
+        }]
+      });
+      // chart.render(); -->
+
+      </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
     <script>
       (function() {
 
@@ -78,13 +132,18 @@
           return hashParams;
         }
 
+        // var myChart = new Chart("myChart", {
+        //       type: "scatter",
+        //       data: {},
+        //       options: {}
+        //     });
+
         var userProfileSource = document.getElementById('user-profile-template').innerHTML,
             userProfileTemplate = Handlebars.compile(userProfileSource),
-            userProfilePlaceholder = document.getElementById('user-profile');
 
-        var oauthSource = document.getElementById('oauth-template').innerHTML,
-            oauthTemplate = Handlebars.compile(oauthSource),
-            oauthPlaceholder = document.getElementById('oauth');
+            userProfilePlaceholder = document.getElementById('user-profile');
+            // rankChartSource = document.getElementById('chartContainer'),
+            // rankChartTemplate = Handlebars.compile(rankChartSource);
 
         var params = getHashParams();
 
@@ -96,19 +155,21 @@
           alert('There was an error during the authentication');
         } else {
           if (access_token) {
-            // render oauth info
-            oauthPlaceholder.innerHTML = oauthTemplate({
-              access_token: access_token,
-              refresh_token: refresh_token
-            });
 
-            $.ajax({
-                url: 'https://api.spotify.com/v1/me',
+          $.ajax({
+                url: 'https://api.spotify.com/v1/me/top/artists',
                 headers: {
                   'Authorization': 'Bearer ' + access_token
                 },
                 success: function(response) {
-                  userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+                  var array = response.items;
+                  //userProfilePlaceholder.innerHTML = userProfileTemplate(array, popularityIndex);
+                  array.unshift(({popularity: 11}));
+                  var popularityIndex = array.map((artist, index) => ({index, popularity: artist.popularity}));
+                  popularityIndex.shift();
+                  array.shift();
+                  userProfilePlaceholder.innerHTML = userProfileTemplate(array, popularityIndex);
+                  //rankChartTemplate.innerHTML = userProfileTemplate(array);
 
                   $('#login').hide();
                   $('#loggedin').show();
@@ -119,24 +180,8 @@
               $('#login').show();
               $('#loggedin').hide();
           }
-
-          document.getElementById('obtain-new-token').addEventListener('click', function() {
-            $.ajax({
-              url: '/refresh_token',
-              data: {
-                'refresh_token': refresh_token
-              }
-            }).done(function(data) {
-              access_token = data.access_token;
-              oauthPlaceholder.innerHTML = oauthTemplate({
-                access_token: access_token,
-                refresh_token: refresh_token
-              });
-            });
-          }, false);
         }
       })();
     </script>
   </body>
 </html>
-

@@ -21,3 +21,7 @@ interface Image {
     height: number;
     width: number;
 }
+
+interface UserTracks {
+    json: string;
+}
